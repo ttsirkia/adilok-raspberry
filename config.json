@@ -1,0 +1,45 @@
+{
+  "bits": 8,
+  "initialPatter": "00000000",
+  "rules": [{
+      "station": "HKI",
+      "action": "PULSE",
+      "type": "OCCUPY",
+      "bit": 0
+    }, {
+      "station": "PSL",
+      "action": "PULSE",
+      "to": "OLK",
+      "bit": 1
+    }, {
+      "station": "OLK",
+      "action": "PULSE",
+      "bit": 2
+    }, {
+      "station": "TKL",
+      "action": "PULSE",
+      "bit": 3
+    },
+    {
+      "station": "KE",
+      "action": "PULSE",
+      "bit": 4
+    },
+    {
+      "station": "HY",
+      "action": "PULSE",
+      "bit": 5
+    },
+    {
+      "station": "RI",
+      "action": "PULSE",
+      "bit": 6
+    },
+    {
+      "station": "HKI",
+      "trackSection": "001a",
+      "action": "AUTO",
+      "bit": 7
+    }
+  ]
+}
