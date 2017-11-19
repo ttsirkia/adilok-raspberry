@@ -84,6 +84,12 @@ Clone the repository:
 git clone https://github.com/ttsirkia/adilok-raspberry.git
 ```
 
+Move to the correct directory and install the required libraries:
+
+```
+npm install
+```
+
 Modify the configuration file and start the program:
 
 ```
