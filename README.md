@@ -98,6 +98,11 @@ node adilok-raspberry.js
 
 The configuration file is by default read from the current directory. However, you can give any other config file as an optional parameter.
 
+## Debugging
+
+Use the command line parameter `--debug` to start the program in debug mode.
+It allows to set and clear bits by giving the corresponding bit number.
+
 ## License
 
 **Do not use this software for any safety-critical purposes!**

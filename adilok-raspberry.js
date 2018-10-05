@@ -10,7 +10,7 @@
  * Data: Finnish Transport Agency, https://rata.digitraffic.fi,
  * data is licensed with CC BY 4.0
  *
- * (C) Teemu Sirkiä, 2017
+ * (C) Teemu Sirkiä, 2018
  * This software is MIT licensed.
  *
  */
@@ -21,6 +21,7 @@ var chalk = require('chalk');
 var SockJS = require('sockjs-client');
 var Stomp = require('stompjs');
 var fs = require('fs');
+var readline = require('readline');
 
 // ************************************************************************************************
 
@@ -240,7 +241,14 @@ var socketFunction = function(frame) {
 
 var readConfig = function() {
 
-  var filename = process.argv[2] || 'config.json';
+  var parameter = null;
+
+  // The config file can be the last command line parameter
+  if (process.argv.length >= 3 && process.argv[process.argv.length - 1] !== '--debug') {
+    parameter = process.argv[process.argv.length - 1];
+  }
+
+  var filename = parameter || 'config.json';
   var config = fs.readFileSync(filename, { encoding: 'utf-8' });
   config = JSON.parse(config);
   bitCount = config.bits || 0;
@@ -268,11 +276,13 @@ var readConfig = function() {
     }
   });
 
-  console.log(chalk.green(ruleCount + ' rules in use.'));
+  if (process.argv[2] !== '--debug') {
+    console.log(chalk.green(ruleCount + ' rules in use.'));
+  }
 
 };
 
-var main = function() {
+var initialize = function() {
 
   displayInfo();
   readConfig();
@@ -285,6 +295,63 @@ var main = function() {
 
   // Shift registers will be updated every ~100 ms
   setInterval(sendPattern, 100);
+
+};
+
+var debug = function() {
+  var rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    prompt: 'Bit: '
+  });
+
+  var printBits = function() {
+    var bitString = '';
+    var numberString = '';
+    for (var i = 0; i < bitCount; i++) {
+      bitString += bits[i] ? chalk.bold.green('*') : chalk.bold.red('-');
+      numberString += (i % 10);
+    }
+    console.log(bitString);
+    console.log(numberString);
+    console.log();
+  };
+
+  console.log();
+  console.log(chalk.yellow('Debug mode'));
+  console.log('Type bit number (0-' + (bits.length - 1) + ') to toggle the bit.');
+  console.log('Press Ctrl+C to exit the program.');
+  console.log();
+
+  printBits();
+
+  rl.prompt();
+
+  rl.on('line', function(line) {
+
+    if (/^\d+$/.test(line.trim())) {
+
+      var bitNumber = +line.trim();
+
+      if (bitNumber >= 0 && bitNumber < bits.length) {
+        toggleBit(bitNumber);
+      }
+
+    } else {
+      console.log('\nIncorrect input!\n');
+    }
+
+    printBits();
+    rl.prompt();
+
+  }).on('close', function() {
+    process.exit(0);
+  });
+
+
+};
+
+var main = function() {
 
   var socket = new SockJS('https://rata.digitraffic.fi/api/v1/websockets/');
   stompClient = Stomp.over(socket);
@@ -305,4 +372,10 @@ var main = function() {
 
 };
 
-main();
+initialize();
+
+if (process.argv[2] === '--debug') {
+  debug();
+} else {
+  main();
+}

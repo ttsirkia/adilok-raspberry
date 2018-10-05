@@ -9,7 +9,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "chalk": "^2.3.0",
+    "chalk": "^2.4.0",
     "onoff": "^1.1.8",
     "sleep": "^5.1.1",
     "sockjs-client": "^1.1.4",
