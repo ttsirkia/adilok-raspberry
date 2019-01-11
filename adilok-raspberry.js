@@ -45,7 +45,6 @@ var initialPattern = '';
 var bits = [];
 var lastMessageReceived = Date.now();
 var rules = {};
-var liveDebug = false;
 
 // ************************************************************************************************
 
@@ -385,8 +384,7 @@ initialize();
 
 if (process.argv[2] === '--debug') {
   debug();
-} if (process.argv[2] === '--livedebug') {
-  liveDebug = true;
+} else if (process.argv[2] === '--livedebug') {
   main();
   debug();
 } else {
