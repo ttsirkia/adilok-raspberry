@@ -45,6 +45,7 @@ var initialPattern = '';
 var bits = [];
 var lastMessageReceived = Date.now();
 var rules = {};
+var liveDebug = false;
 
 // ************************************************************************************************
 
@@ -239,7 +240,7 @@ var readConfig = function() {
   var parameter = null;
 
   // The config file can be the last command line parameter
-  if (process.argv.length >= 3 && process.argv[process.argv.length - 1] !== '--debug') {
+  if (process.argv.length >= 3 && process.argv[process.argv.length - 1] !== '--debug' && process.argv[process.argv.length - 1] !== '--livedebug') {
     parameter = process.argv[process.argv.length - 1];
   }
 
@@ -383,6 +384,10 @@ var main = function() {
 initialize();
 
 if (process.argv[2] === '--debug') {
+  debug();
+} if (process.argv[2] === '--livedebug') {
+  liveDebug = true;
+  main();
   debug();
 } else {
   main();

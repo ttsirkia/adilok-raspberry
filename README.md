@@ -105,6 +105,9 @@ The configuration file is by default read from the current directory. However, y
 Use the command line parameter `--debug` to start the program in debug mode.
 It allows to set and clear bits by giving the corresponding bit number.
 
+You can also use `--livedebug` to start the normal mode together with the
+debug mode.
+
 ## License
 
 **Do not use this software for any safety-critical purposes!**
