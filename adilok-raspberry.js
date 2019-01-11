@@ -1,16 +1,16 @@
 /**
  * ADILOK for Raspberry PI
  *
- * Receives train running messages from Finnish Transport Agency
+ * Receives train running messages from Traffic Management Finland
  * and controls shift registers attached to Raspberry PI based on
  * the given rules.
  *
  * !! DO NOT USE FOR SAFETY-CRITICAL PURPOSES !!
  *
- * Data: Finnish Transport Agency, https://rata.digitraffic.fi,
+ * Data: Traffic Management Finland, https://rata.digitraffic.fi,
  * data is licensed with CC BY 4.0
  *
- * (C) Teemu Sirkiä, 2018
+ * (C) Teemu Sirkiä, 2019
  * This software is MIT licensed.
  *
  */
@@ -107,7 +107,7 @@ var setInternal = function(bit, status) {
 
 var displayInfo = function() {
   console.log(chalk.bold.white('ADILOK - Train running message receiver for Raspberry PI'));
-  console.log('Data: Finnish Transport Agency, https://rata.digitraffic.fi/ (CC BY 4.0)');
+  console.log('Data: Traffic Management Finland, https://rata.digitraffic.fi/ (CC BY 4.0)');
   console.log(chalk.red('Only for non-safety critical purposes!'));
   console.log();
   console.log(chalk.green('Starting...'));

@@ -3,7 +3,7 @@
 ## Introduction
 
 This software receives train running messages from the open data provided
-by [Finnish Transport Agency](https://rata.digitraffic.fi)
+by [Traffic Management Finland](https://rata.digitraffic.fi)
 [(CC BY 4.0)](http://creativecommons.org/licenses/by/4.0/). There is a bit
 register which the received messages modify as defined in the message
 rules. The contents of the bit register is send to shift-and-store circuits
