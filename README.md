@@ -67,6 +67,8 @@ There can be any number of rules. Each rule must contain at least `station`,
 * `SET`
 * `CLEAR`
 * `PULSE` gives a positive pulse, length ~100 ms
+* `PULSEOCCUPY` gives a positive pulse if received OCCUPY, length ~100 ms
+* `PULSERELEASE` gives a positive pulse if received RELEASE, length ~100 ms
 * `TOGGLE` changes the current state to the opposite
 
 ## Installation

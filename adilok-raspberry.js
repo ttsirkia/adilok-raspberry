@@ -188,6 +188,10 @@ var takeAction = function(message, rule) {
   } else if (rule.action === 'PULSE') {
     // Give a short pulse (~100 ms)
     pulseBit(rule.bit);
+  } else if (rule.action === 'PULSEOCCUPY' && message.type === 'OCCUPY') {
+    pulseBit(rule.bit);
+  } else if (rule.action === 'PULSERELEASE' && message.type === 'RELEASE') {
+    pulseBit(rule.bit);
   } else {
     console.log(chalk.red.bold('  Unknown action!'));
   }
