@@ -1,6 +1,6 @@
 {
   "name": "adilok-raspberry",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Train running message receiver for Raspberry PI",
   "main": "adilok-raspberry.js",
   "scripts": {
@@ -12,7 +12,6 @@
     "chalk": "^2.4.0",
     "onoff": "^1.1.8",
     "sleep": "^5.1.1",
-    "sockjs-client": "^1.1.4",
-    "stompjs": "^2.3.3"
+    "mqtt": "^2.18.8"
   }
 }

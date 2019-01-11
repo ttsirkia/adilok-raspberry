@@ -18,8 +18,7 @@
 var sleep = require('sleep');
 var Gpio = require('onoff').Gpio;
 var chalk = require('chalk');
-var SockJS = require('sockjs-client');
-var Stomp = require('stompjs');
+var mqtt = require('mqtt');
 var fs = require('fs');
 var readline = require('readline');
 
@@ -203,6 +202,7 @@ var takeAction = function(message, rule) {
  * track section code (if present) is compared here.
  */
 var handleMessage = function(message) {
+
   if (rules[message.station]) {
     rules[message.station].forEach(function(rule) {
       takeAction(message, rule);
@@ -216,8 +216,7 @@ var handleMessage = function(message) {
   }
 };
 
-var messageReceiver = function(messages) {
-  var data = JSON.parse(messages.body);
+var messageReceiver = function(message) {
 
   // Blink the received LED always when messages arrive
   pulseInternal(recv);
@@ -227,16 +226,8 @@ var messageReceiver = function(messages) {
 
   lastMessageReceived = Date.now();
 
-  data.forEach(function(message) {
-    handleMessage(message);
-  });
-};
+  handleMessage(JSON.parse(message.toString()));
 
-var socketFunction = function(frame) {
-  console.log(chalk.green('Socket connected.'));
-  stompClient.subscribe('/train-tracking/', function(messages) {
-    messageReceiver(messages);
-  });
 };
 
 var readConfig = function() {
@@ -353,20 +344,33 @@ var debug = function() {
 
 var main = function() {
 
-  var socket = new SockJS('https://rata.digitraffic.fi/api/v1/websockets/');
-  stompClient = Stomp.over(socket);
-  stompClient.connect({}, socketFunction);
+  var socket = mqtt.connect('ws://rata-mqtt.digitraffic.fi:9001');
 
-  // If the latest message has been received over a minute ago,
-  // try to reconnect the socket
+  socket.on('close', function() {
+    setInternal(err, 1);
+    console.log(chalk.yellow.bold('Socket disconnected.'));
+  });
+
+  socket.on('reconnect', function() {
+    setInternal(err, 1);
+    console.log(chalk.yellow.bold('Reconnecting...'));
+  });
+
+  socket.on('connect', function() {
+    console.log(chalk.green('Socket connected.'));
+    socket.subscribe('train-tracking/#');
+  });
+
+  socket.on('message', function(topic, message) {
+    messageReceiver(message);
+  });
+
+  // Warning if no messages have been received
   setInterval(function() {
     if (Date.now() - lastMessageReceived > 60 * 1000) {
       setInternal(err, 1);
       lastMessageReceived = Date.now();
-      console.log(chalk.yellow.bold('No socket messages. Reconnecting...'));
-      socket = new SockJS('https://rata.digitraffic.fi/api/v1/websockets/');
-      stompClient = Stomp.over(socket);
-      stompClient.connect({}, socketFunction);
+      console.log(chalk.yellow.bold('No socket messages.'));
     }
   }, 2000);
 
