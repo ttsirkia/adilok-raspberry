@@ -348,16 +348,16 @@ var main = function() {
 
   socket.on('close', function() {
     setInternal(err, 1);
-    console.log(chalk.yellow.bold('Socket disconnected.'));
+    console.log(new Date().toISOString() + ' ' + chalk.yellow.bold('Socket disconnected.'));
   });
 
   socket.on('reconnect', function() {
     setInternal(err, 1);
-    console.log(chalk.yellow.bold('Reconnecting...'));
+    console.log(new Date().toISOString() + ' ' + chalk.yellow.bold('Reconnecting...'));
   });
 
   socket.on('connect', function() {
-    console.log(chalk.green('Socket connected.'));
+    console.log(new Date().toISOString() + ' ' + chalk.green('Socket connected.'));
     socket.subscribe('train-tracking/#');
   });
 
@@ -370,7 +370,7 @@ var main = function() {
     if (Date.now() - lastMessageReceived > 60 * 1000) {
       setInternal(err, 1);
       lastMessageReceived = Date.now();
-      console.log(chalk.yellow.bold('No socket messages.'));
+      console.log(new Date().toISOString() + ' ' + chalk.yellow.bold('No socket messages.'));
     }
   }, 2000);
 
