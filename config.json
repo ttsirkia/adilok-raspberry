@@ -1,6 +1,6 @@
 {
   "bits": 8,
-  "initialPatter": "00000000",
+  "initialPattern": "00000000",
   "rules": [{
       "station": "HKI",
       "action": "PULSE",
@@ -37,8 +37,9 @@
     },
     {
       "station": "HKI",
-      "trackSection": "001a",
-      "action": "AUTO",
+      "action": "SET",
+      "type": "ROUTESET",
+      "to": "PSL",
       "bit": 7
     }
   ]

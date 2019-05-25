@@ -15,21 +15,23 @@
  *
  */
 
-var sleep = require('sleep');
-var Gpio = require('onoff').Gpio;
-var chalk = require('chalk');
-var mqtt = require('mqtt');
-var fs = require('fs');
-var readline = require('readline');
+'use strict';
+
+const sleep = require('sleep');
+const Gpio = require('onoff').Gpio;
+const chalk = require('chalk');
+const mqtt = require('mqtt');
+const fs = require('fs');
+const readline = require('readline');
 
 // ************************************************************************************************
 
-var clk = new Gpio(2, 'out');
-var data = new Gpio(3, 'out');
-var strobe = new Gpio(4, 'out');
-var recv = new Gpio(14, 'out');
-var ack = new Gpio(15, 'out');
-var err = new Gpio(18, 'out');
+const clk = new Gpio(2, 'out');
+const data = new Gpio(3, 'out');
+const strobe = new Gpio(4, 'out');
+const recv = new Gpio(14, 'out');
+const ack = new Gpio(15, 'out');
+const err = new Gpio(18, 'out');
 
 clk.writeSync(0);
 data.writeSync(0);
@@ -40,11 +42,12 @@ err.writeSync(1);
 
 // ************************************************************************************************
 
-var bitCount = 8;
-var initialPattern = '';
-var bits = [];
-var lastMessageReceived = Date.now();
-var rules = {};
+const bits = [];
+const rules = {};
+let bitCount = 8;
+let initialPattern = '';
+let lastMessageReceived = Date.now();
+let useRouteset = true;
 
 // ************************************************************************************************
 
@@ -53,8 +56,8 @@ var rules = {};
  * bit is the last bit to transmit and therefore, it will be the
  * bit 0 in the first shift register, too.
  */
-var sendPattern = function() {
-  var counter, bit;
+const sendPattern = function() {
+  let counter, bit;
   for (counter = bits.length; counter > 0; counter--) {
     bit = bits[counter - 1];
     if (bit) {
@@ -72,39 +75,39 @@ var sendPattern = function() {
 
 // Operations for the GPIO pins
 
-var clearBit = function(bit) {
+const clearBit = function(bit) {
   bits[bit] = false;
 };
 
-var setBit = function(bit) {
+const setBit = function(bit) {
   bits[bit] = true;
 };
 
-var toggleBit = function(bit) {
+const toggleBit = function(bit) {
   bits[bit] = !bits[bit];
 };
 
-var pulseBit = function(bit) {
+const pulseBit = function(bit) {
   setBit(bit);
   setTimeout(function() {
     clearBit(bit);
   }, 100);
 };
 
-var pulseInternal = function(bit) {
+const pulseInternal = function(bit) {
   bit.writeSync(1);
   setTimeout(function() {
     bit.writeSync(0);
   }, 100);
 };
 
-var setInternal = function(bit, status) {
+const setInternal = function(bit, status) {
   bit.writeSync(status);
 };
 
 // ************************************************************************************************
 
-var displayInfo = function() {
+const displayInfo = function() {
   console.log(chalk.bold.white('ADILOK - Train running message receiver for Raspberry PI'));
   console.log('Data: Traffic Management Finland, https://rata.digitraffic.fi/ (CC BY 4.0)');
   console.log(chalk.red('Only for non-safety critical purposes!'));
@@ -112,10 +115,10 @@ var displayInfo = function() {
   console.log(chalk.green('Starting...'));
 };
 
-var printMessage = function(message) {
+const printTrainTrackingMessage = function(message) {
   console.log(message.timestamp);
-  var output = chalk.bold.white(message.trainNumber) + ' ' + chalk.bold.yellow(message.station) + ' ' + chalk.bold.cyan(message.trackSection) + ' ';
-  if (message.type == 'OCCUPY') {
+  let output = chalk.bold.white(message.trainNumber) + ' ' + chalk.bold.yellow(message.station) + ' ' + chalk.bold.cyan(message.trackSection) + ' ';
+  if (message.type === 'OCCUPY') {
     output += chalk.bold.red(message.type);
   } else {
     output += chalk.bold.green(message.type);
@@ -129,49 +132,109 @@ var printMessage = function(message) {
   console.log(output);
 };
 
+const printRoutesetMessage = function(message) {
+  console.log(message.messageTime);
+  let output = chalk.bold.white(message.trainNumber) + ' ' + chalk.bold.cyan(message.routeType) + '\n';
+  message.routesections.forEach(function(rs) {
+    output += chalk.bold.yellow(rs.stationCode) + ' ' + chalk.bold.green(rs.sectionId) + '->';
+  });
+  console.log(output);
+};
+
+const checkTrainTrackingRules = function(message, rule) {
+  // Additional rules to check
+
+  if (['ROUTESET', 'ROUTESET_S', 'ROUTESET_C'].indexOf(rule.type) >= 0) {
+    return false;
+  }
+
+  if (rule.from && message.previousStation !== rule.from) {
+    return false;
+  }
+
+  if (rule.fromSection && message.previousTrackSection !== rule.to) {
+    return false;
+  }
+
+  if (rule.to && message.nextStation !== rule.to) {
+    return false;
+  }
+
+  if (rule.toSection && message.nextTrackSection !== rule.to) {
+    return false;
+  }
+
+  if (rule.type && message.type !== rule.type) {
+    return false;
+  }
+
+  return true;
+
+};
+
+const checkRoutesetRules = function(message, rule, prev, next) {
+
+  if (['ROUTESET', 'ROUTESET_S', 'ROUTESET_C'].indexOf(rule.type) < 0) {
+    return false;
+  }
+
+  if (rule.type === 'ROUTESET' && message.routeType !== 'T') {
+    return false;
+  }
+
+  if (rule.type === 'ROUTESET_S' && message.routeType !== 'S') {
+    return false;
+  }
+
+  if (rule.type === 'ROUTESET_C' && message.routeType !== 'C') {
+    return false;
+  }
+
+  if (rule.from && (prev.length === 0 || (prev.length > 0 && prev[prev.length - 1].stationCode !== rule.from))) {
+    return false;
+  }
+
+  if (rule.to && (next.length === 0 || (next.length > 0 && next[0].stationCode !== rule.to))) {
+    return false;
+  }
+
+  if (rule.fromSection && (prev.length === 0 || (prev.length > 0 && prev[prev.length - 1].sectionId !== rule.fromSection))) {
+    return false;
+  }
+
+  if (rule.toSection && (next.length === 0 || (next.length > 0 && next[0].sectionId !== rule.toSection))) {
+    return false;
+  }
+
+  return true;
+
+};
+
 /**
  * Runs the given action if all the conditions match.
  * If an action was taken, the acknowledge LED will
  * will blink once.
  */
-var takeAction = function(message, rule) {
+const takeAction = function(message, rule) {
 
-  // Additional rules to check
-
-  if (rule.from && message.previousStation !== rule.from) {
-    return;
+  if (message.routeType) {
+    printRoutesetMessage(message);
+  } else {
+    printTrainTrackingMessage(message);
   }
-
-  if (rule.fromSection && message.previousTrackSection !== rule.to) {
-    return;
-  }
-
-  if (rule.to && message.nextStation !== rule.to) {
-    return;
-  }
-
-  if (rule.toSection && message.nextTrackSection !== rule.to) {
-    return;
-  }
-
-  if (rule.type && message.type !== rule.type) {
-    return;
-  }
-
-  printMessage(message);
 
   // Check which action to take
   console.log('  Action: ' + chalk.white.bold(rule.action) + ', bit ' + chalk.white.bold(rule.bit));
   if (rule.action === 'AUTO') {
-    // Action to set the bit if 'OCCUPY', otherwise clear it
-    if (message.type === 'OCCUPY') {
+    // Action to set the bit if 'OCCUPY' or set a route, otherwise clear it
+    if (['OCCUPY', 'T', 'S'].indexOf(message.type) >= 0) {
       setBit(rule.bit);
     } else {
       clearBit(rule.bit);
     }
   } else if (rule.action === 'AUTOINV') {
     // Same as AUTO but inverted output
-    if (message.type === 'OCCUPY') {
+    if (['OCCUPY', 'T', 'S'].indexOf(message.type) >= 0) {
       clearBit(rule.bit);
     } else {
       setBit(rule.bit);
@@ -199,24 +262,58 @@ var takeAction = function(message, rule) {
 /**
  * Checks if the received message matches with the
  * predefined rules. Only the station code and the
- * track section code (if present) is compared here.
+ * track section code (if present) are compared here.
  */
-var handleMessage = function(message) {
+const handleTrainTrackingMessage = function(message) {
 
   if (rules[message.station]) {
     rules[message.station].forEach(function(rule) {
-      takeAction(message, rule);
+      if (checkTrainTrackingRules(message, rule)) {
+        takeAction(message, rule);
+      }
     });
   }
 
   if (rules[message.station + '|' + message.trackSection]) {
     rules[message.station + '|' + message.trackSection].forEach(function(rule) {
-      takeAction(message, rule);
+      if (checkTrainTrackingRules(message, rule)) {
+        takeAction(message, rule);
+      }
     });
   }
+
 };
 
-var messageReceiver = function(message) {
+/**
+ * Checks if the received message matches with the
+ * predefined rules. Only the station code and the
+ * section code (if present) are compared here.
+ * Each route section is processed separately.
+ */
+const handleRoutesetMessage = function(message) {
+
+  message.routesections.forEach(function(section, i) {
+    if (rules[section.stationCode]) {
+      rules[section.stationCode].forEach(function(rule) {
+        if (checkRoutesetRules(message, rule, message.routesections.slice(0, i), message.routesections.slice(i + 1, section.length))) {
+          takeAction(message, rule);
+        }
+      });
+    }
+
+    if (rules[section.stationCode + '|' + section.sectionId]) {
+      rules[section.stationCode + '|' + section.sectionId].forEach(function(rule) {
+        if (checkRoutesetRules(message, rule, message.routesections.slice(0, i), message.routesections.slice(i + 1, section.length))) {
+          takeAction(message, rule);
+        }
+      });
+    }
+  });
+
+
+};
+
+const messageReceiver = function(channel, message) {
 
   // Blink the received LED always when messages arrive
   pulseInternal(recv);
@@ -226,26 +323,30 @@ var messageReceiver = function(message) {
 
   lastMessageReceived = Date.now();
 
-  handleMessage(JSON.parse(message.toString()));
+  if (channel === 'train-tracking') {
+    handleTrainTrackingMessage(JSON.parse(message.toString()));
+  } else if (channel === 'routesets') {
+    handleRoutesetMessage(JSON.parse(message.toString()));
+  }
 
 };
 
-var readConfig = function() {
+const readConfig = function() {
 
-  var parameter = null;
+  let parameter = null;
 
   // The config file can be the last command line parameter
   if (process.argv.length >= 3 && process.argv[process.argv.length - 1] !== '--debug' && process.argv[process.argv.length - 1] !== '--livedebug') {
     parameter = process.argv[process.argv.length - 1];
   }
 
-  var filename = parameter || 'config.json';
-  var config = fs.readFileSync(filename, { encoding: 'utf-8' });
+  const filename = parameter || 'config.json';
+  let config = fs.readFileSync(filename, { encoding: 'utf-8' });
   config = JSON.parse(config);
   bitCount = config.bits || 0;
   initialPattern = config.initialPattern || '';
 
-  var ruleCount = 0;
+  let ruleCount = 0;
 
   config.rules.forEach(function(rule) {
 
@@ -273,13 +374,13 @@ var readConfig = function() {
 
 };
 
-var initialize = function() {
+const initialize = function() {
 
   displayInfo();
   readConfig();
 
   // Set the initial state for all bits and store it to the shift registers
-  for (var i = 0; i < bitCount; i++) {
+  for (let i = 0; i < bitCount; i++) {
     bits[i] = initialPattern[i] === '1' || false;
   }
   sendPattern();
@@ -289,17 +390,17 @@ var initialize = function() {
 
 };
 
-var debug = function() {
-  var rl = readline.createInterface({
+const debug = function() {
+  const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
     prompt: 'Bit: '
   });
 
-  var printBits = function() {
-    var bitString = '';
-    var numberString = '';
-    for (var i = 0; i < bitCount; i++) {
+  const printBits = function() {
+    let bitString = '';
+    let numberString = '';
+    for (let i = 0; i < bitCount; i++) {
       bitString += bits[i] ? chalk.bold.green('*') : chalk.bold.red('-');
       numberString += (i % 10);
     }
@@ -322,7 +423,7 @@ var debug = function() {
 
     if (/^\d+$/.test(line.trim())) {
 
-      var bitNumber = +line.trim();
+      const bitNumber = +line.trim();
 
       if (bitNumber >= 0 && bitNumber < bits.length) {
         toggleBit(bitNumber);
@@ -335,16 +436,13 @@ var debug = function() {
     printBits();
     rl.prompt();
 
-  }).on('close', function() {
-    process.exit(0);
-  });
-
+  }).on('close', () => process.exit(0));
 
 };
 
-var main = function() {
+const main = function() {
 
-  var socket = mqtt.connect('ws://rata-mqtt.digitraffic.fi:9001');
+  const socket = mqtt.connect('ws://rata-mqtt.digitraffic.fi:9001');
 
   socket.on('close', function() {
     setInternal(err, 1);
@@ -358,12 +456,13 @@ var main = function() {
 
   socket.on('connect', function() {
     console.log(new Date().toISOString() + ' ' + chalk.green('Socket connected.'));
+    if (useRouteset) {
+      socket.subscribe('routesets/#');
+    }
     socket.subscribe('train-tracking/#');
   });
 
-  socket.on('message', function(topic, message) {
-    messageReceiver(message);
-  });
+  socket.on('message', (topic, message) => messageReceiver(topic.split('/')[0], message));
 
   // Warning if no messages have been received
   setInterval(function() {

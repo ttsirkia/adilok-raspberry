@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This software receives train running messages from the open data provided
+This software receives train running and route set messages from the open data provided
 by [Traffic Management Finland](https://rata.digitraffic.fi)
 [(CC BY 4.0)](http://creativecommons.org/licenses/by/4.0/). There is a bit
 register which the received messages modify as defined in the message
@@ -53,13 +53,21 @@ There can be any number of rules. Each rule must contain at least `station`,
 * `station` (mandatory) station code
 * `bit` (mandatory) bit number
 * `action` (mandatory) action to do, see the list below
-* `type` OCCUPY or RELEASE
+* `type` OCCUPY, RELEASE, ROUTESET, ROUTESET_C or ROUTESET_S
 * `trackSection` track section code
 * `from` previous station code
 * `fromSection` previous track section code
 * `to` next station code
 * `toSection` next track section code
 
+In case of route set messages, previous and next station or
+section refers to the previous or next route section element
+in the route set message.
+
+Types `OCCUPY` and `RELEASE` react to train running messages.
+Types `ROUTESET`, `ROUTESET_C` and `ROUTESET_S` react to
+route set messages. The last two types refer to cancelling
+a route or setting a shunting route.
 
 #### Actions
 * `AUTO` OCCUPY message sets the bit, RELEASE clears
