@@ -323,10 +323,15 @@ const messageReceiver = function(channel, message) {
 
   lastMessageReceived = Date.now();
 
-  if (channel === 'train-tracking') {
-    handleTrainTrackingMessage(JSON.parse(message.toString()));
-  } else if (channel === 'routesets') {
-    handleRoutesetMessage(JSON.parse(message.toString()));
+  try {
+    if (channel === 'train-tracking') {
+      handleTrainTrackingMessage(JSON.parse(message.toString()));
+    } else if (channel === 'routesets') {
+      handleRoutesetMessage(JSON.parse(message.toString()));
+    }
+  } catch (e) {
+    setInternal(err, 1);
+    console.log(chalk.red.bold('Cannot process the received message!'));
   }
 
 };
